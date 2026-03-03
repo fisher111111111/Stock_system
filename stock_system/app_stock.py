@@ -1,5 +1,5 @@
 import pyodbc, bcrypt
-from stock_system import db, app
+from . import db, app
 
 with app.app_context():
     connection = db.engine.raw_connection()  # It establishes connection with db. 

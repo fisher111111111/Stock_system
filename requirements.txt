@@ -5,3 +5,7 @@ bcrypt
 Flask-WTF
 WTForms
 Flask-Login
+pytest>=7.0.0
+pytest-playwright>=0.3.0
+playwright>=1.30.0
+pytest-html>=3.2.0  # для HTML-отчетов

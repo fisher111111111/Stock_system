@@ -1,4 +1,4 @@
-from stock_system import db, app
+from . import db, app
 from flask_login import UserMixin
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, LargeBinary, Float, CheckConstraint

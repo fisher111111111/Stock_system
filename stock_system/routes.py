@@ -1,8 +1,8 @@
-from stock_system import app
+from . import app, db
+from .modules_db import Users
 from flask import render_template, request, redirect, url_for, flash
-from stock_system.forms import LoginForm, CreateUserForm
-from stock_system.modules_db import Users
-from stock_system.app_stock import *
+from .forms import LoginForm, CreateUserForm
+from .app_stock import *
 from flask_login import LoginManager, login_user, login_required, logout_user
 
 login_manager = LoginManager()
