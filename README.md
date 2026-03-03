@@ -76,3 +76,4 @@ Stock_Management_System/
 ```
 
 ---
+⚠️ For the first enter to project, follow guide on /stock_system/routes.py str 34-35 
