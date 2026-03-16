@@ -22,7 +22,7 @@ run_tests:
     - pytest --disable-warnings
     # при необходимости можно добавить --maxfail=1
   only:
-    - $CI_DEFAULT_BRANCH
+    - main
 
 # БЛОК ОТПРАВКИ В GITHUB
 push_to_github:
@@ -40,5 +40,5 @@ push_to_github:
       }
       git push github_remote HEAD:main
   only:
-    - $CI_DEFAULT_BRANCH
+    - main
   when: on_success
