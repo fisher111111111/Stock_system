@@ -1,0 +1,45 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  # Настройка кодировки для PowerShell, чтобы избежать проблем с символами
+  PYTHONIOENCODING: "utf-8"
+
+# БЛОК ТЕСТИРОВАНИЯ
+run_tests:
+  stage: test
+  tags:
+    - stock_db # Укажите тег, который вы дали локальному раннеру при регистрации
+  script:
+    - echo "--- Подготовка окружения ---"
+    # Создаем или активируем виртуальное окружение (если нужно)
+    - if (!(Test-Path ".venv")) { python -m venv .venv }
+    - .\.venv\Scripts\Activate.ps1
+    - python -m pip install --upgrade pip
+    - pip install -r requirements.txt
+
+    - echo "--- Запуск автотестов ---"
+    # Запуск pytest (или другого вашего фреймворка)
+    - pytest --disable-warnings #--maxfail=1
+  only:
+    - $CI_DEFAULT_BRANCH # Название вашей основной ветки (master или main)
+
+# БЛОК ОТПРАВКИ В GITHUB
+push_to_github:
+  stage: deploy
+  tags:
+    - stock_db
+
+  script:
+    - |
+      $remoteUrl = "https://fisher111111111:${env:GH_TOKEN}@github.com/fisher111111111/Stock_system.git"
+      if (git remote | Select-String "github_remote") {
+          git remote set-url github_remote $remoteUrl
+      } else {
+          echo "-- Неудачная синхронизация с GitHub, не найден удаленный репо --"
+      }
+      git push github_remote HEAD:main
+  only:
+    - $CI_DEFAULT_BRANCH
+  when: on_success # Запускать только если тесты прошли успешно

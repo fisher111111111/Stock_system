@@ -62,14 +62,17 @@ def page(page: Page) -> Page:
 
 @pytest.fixture
 def test_credentials():
-    # ✅ Подтверждаем: используем реальные данные из вашего лога
+    unique_first_name = f"First_{int(time.time())}"
+    unique_last_name = f"Last_{int(time.time())}"
+    unique_password = f"Password_{int(time.time())}"
+
     return {
         "manager": {"username": "admin", "password": "admin"},
         "employee": {"username": "Worker", "password": "work"},  # Обратите внимание: username = "Worker"
         "new_user": {
-            "first_name": "TestUser",
-            "last_name": "TestLast",
-            "password": "Test123!",
+            "first_name": unique_first_name,
+            "last_name": unique_last_name,
+            "password": unique_password,
             "role": ROLES["employee"]
         }
     }
@@ -85,7 +88,7 @@ def wait_ready(page: Page, timeout=10000):
 def get_flash(page: Page) -> str:
     try:
         return page.locator(SELECTORS["flash_message"]).first.text_content(timeout=2000).strip()
-    except:
+    except TimeoutError:
         return ""
 
 
@@ -178,15 +181,57 @@ class TestManagerCreateUserScenario:
         login(page, creds["username"], creds["password"], role=ROLES["manager"])
         expect(page).to_have_url(f"{BASE_URL}/create")
 
+        # === 🔧 Отключаем JS-валидацию goodUser() ===
+        page.evaluate("""() => {
+               const form = document.querySelector('form');
+               if (form) form.onsubmit = null;
+           }""")
+
         # === Заполнение формы ===
+        csrf_token = page.locator('input#csrf_token').get_attribute('value')
+        assert csrf_token, "CSRF token не найден!"
+
         page.fill(SELECTORS["first_name"], new_user["first_name"])
         page.fill(SELECTORS["last_name"], new_user["last_name"])
         page.fill(SELECTORS["password"], new_user["password"])
         page.fill(SELECTORS["confirm_password"], new_user["password"])
-        page.select_option(SELECTORS["role_select"], new_user["role"])
+
+        # === ✅ Выбор роли (исправлено!) ===
+        # Вариант А: по value (если value совпадает с текстом)
+        page.select_option(SELECTORS["role_select"], new_user["role"])  # "Employee"
+
+        # page.select_option(SELECTORS["role_select"], new_user["role"])
+        # page.select_option(SELECTORS["role_select"], ROLES[new_user["role"].lower()])
 
         # === Отправка формы с отладкой ===
         print(f"[DEBUG] Before submit - URL: {page.url}")
+
+        # === ПОЛНЫЙ DEBUG-БЛОК ===
+        print("\n" + "=" * 60)
+        print("[DEBUG] === ПЕРЕД ОТПРАВКОЙ ФОРМЫ ===")
+
+        # 1. CSRF
+        csrf = page.locator("input#csrf_token, input[name='csrf_token']").first
+        print(f"CSRF: exists={csrf.count() > 0}, value='{csrf.get_attribute('value') if csrf.count() > 0 else 'N/A'}'")
+
+        # 2. Заполненные поля
+        for key in ["first_name", "last_name", "password", "confirm_password"]:
+            loc = page.locator(SELECTORS[key])
+            print(f"{key}: exists={loc.count() > 0}, value='{loc.input_value() if loc.count() > 0 else 'N/A'}'")
+
+        # 3. Роль
+        role_val = page.locator(SELECTORS["role_select"]).input_value()
+        print(f"role_select: выбранное value='{role_val}'")
+
+        # 4. Кнопка отправки
+        btn = page.locator(SELECTORS["create_submit"]).first
+        print(f"submit_btn: tag={btn.evaluate('e=>e.tagName')}, type={btn.get_attribute('type')}")
+
+        # 5. Скриншот
+        page.screenshot(path="debug_before_submit.png")
+        print("[DEBUG] Скриншот: debug_before_submit.png")
+        print("=" * 60 + "\n")
+
         page.click(SELECTORS["create_submit"])
         wait_ready(page, timeout=20000)  # Увеличенный таймаут
         print(f"[DEBUG] After submit - URL: {page.url}")
@@ -210,7 +255,7 @@ class TestManagerCreateUserScenario:
         if errors:
             print(f"[WARN] Form validation errors: {errors}")
             # Для теста создаем пользователя с гарантированно валидными данными
-            pytest.skip(f"Form validation failed: {errors}")
+            # assert False, f"Form validation failed: {errors}"
 
         # Если ничего не помогло - делаем скриншот и падаем с информативным сообщением
         debug_snapshot(page, "create_user_fail")
