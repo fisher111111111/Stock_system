@@ -46,7 +46,7 @@ DB_CONFIG = {
     'Timeout': 5,  # Таймаут подключения в секундах
 }
 
-
+# ...
 def check_db_connection():
     """Проверяет подключение к БД. Возвращает (True, None) или (False, ошибка)."""
     conn_str = (
