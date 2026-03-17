@@ -10,16 +10,21 @@ run_tests:
   stage: test
   tags:
     - stock_db
+
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .venv/
   script:
     - echo "--- Подготовка окружения ---"
-    # Создаём виртуальное окружение, если его нет
     - if (!(Test-Path ".venv")) { python -m venv .venv }
-    # Активируем окружение. В PowerShell точка с пробелом обязательна.
-    - . .\.venv\Scripts\Activate.ps1
-    - python -m pip install --upgrade pip
-    - pip install -r requirements.txt
+
+    - echo "--- Установка зависимостей ---"
+    - .venv\Scripts\pip install --upgrade pip
+    - .venv\Scripts\pip install -r requirements.txt
+
     - echo "--- Запуск автотестов ---"
-    - pytest --disable-warnings
+    - .venv\Scripts\pytest --disable-warnings
     # при необходимости можно добавить --maxfail=1
   only:
     - main
