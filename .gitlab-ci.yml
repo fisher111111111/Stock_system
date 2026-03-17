@@ -20,10 +20,12 @@ run_tests:
     - if (!(Test-Path ".venv")) { python -m venv .venv }
 
     - echo "--- Установка зависимостей ---"
+    # Важно: используем pip внутри .venv
     - .venv\Scripts\pip install --upgrade pip
     - .venv\Scripts\pip install -r requirements.txt
 
     - echo "--- Запуск автотестов ---"
+    # Важно: используем pytest внутри .venv
     - .venv\Scripts\pytest --disable-warnings
     # при необходимости можно добавить --maxfail=1
   only:
