@@ -23,16 +23,27 @@ run_tests:
     - python -m venv .venv
 
     - echo "--- Установка зависимостей ---"
-    # Указываем путь к кешу для pip
-    - .venv\Scripts\pip install --upgrade pip
-    - .venv\Scripts\pip install --cache-dir .venv/pip-cache/ -r requirements.txt
+    # 🔥 Одна команда: установка зависимостей с использованием кеша
+    # Используем прямые слеши / для надёжности в YAML и PowerShell
+    - .venv/Scripts/pip install --cache-dir .venv/pip-cache/ -r requirements.txt
+
     # 🔥 ВАЖНО: Установка браузеров для Playwright
-    - .venv\Scripts\playwright install chromium
+    - .venv/Scripts/playwright install chromium
 
     - echo "--- Запуск автотестов ---"
-    - .venv\Scripts\pytest --disable-warnings
-  only:
-    - main
+    # Запускаем pytest из виртуального окружения (полный путь)
+    - .venv/Scripts/pytest --disable-warnings --html=report.html --self-contained-html
+
+  # Сохраняем отчёт о тестах как артефакт
+  artifacts:
+    when: always
+    paths:
+      - report.html
+    expire_in: 7 days
+
+  # Современный синтаксис вместо устаревшего only
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
 # БЛОК ОТПРАВКИ В GITHUB
 push_to_github:
@@ -49,6 +60,6 @@ push_to_github:
           git remote add github_remote $remoteUrl
       }
       git push github_remote HEAD:main
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   when: on_success
