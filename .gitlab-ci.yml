@@ -11,23 +11,26 @@ run_tests:
   tags:
     - stock_db
 
+  # Кэшируем только кеш pip, а не само окружение
   cache:
     key: ${CI_COMMIT_REF_SLUG}
     paths:
-      - .venv/
+      - .venv/pip-cache/
+
   script:
     - echo "--- Подготовка окружения ---"
-    - if (!(Test-Path ".venv")) { python -m venv .venv }
+    # Создаем venv всегда, чтобы избежать проблем с путями из кэша
+    - python -m venv .venv
 
     - echo "--- Установка зависимостей ---"
-    # Важно: используем pip внутри .venv
+    # Указываем путь к кешу для pip
     - .venv\Scripts\pip install --upgrade pip
-    - .venv\Scripts\pip install -r requirements.txt
+    - .venv\Scripts\pip install --cache-dir .venv/pip-cache/ -r requirements.txt
+    # 🔥 ВАЖНО: Установка браузеров для Playwright
+    - .venv\Scripts\playwright install chromium
 
     - echo "--- Запуск автотестов ---"
-    # Важно: используем pytest внутри .venv
     - .venv\Scripts\pytest --disable-warnings
-    # при необходимости можно добавить --maxfail=1
   only:
     - main
 
