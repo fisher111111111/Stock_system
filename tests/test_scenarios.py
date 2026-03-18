@@ -43,7 +43,7 @@ SELECTORS = {
     "btn_stock": "input[name='submit_button'][value='Stock']",
 
     # Show page
-    "products_table": "#hide",
+    "products_table": "#styled-table",
 
     # Common
     "flash_message": "#display_flash",
@@ -136,7 +136,7 @@ def login(page: Page, username: str, password: str, role: str = None):
 
 class TestEmployeeScenario:
     """✅ Основной сценарий сотрудника - должен работать"""
-
+    @pytest.mark.concretny
     def test_employee_full_workflow(self, page: Page, test_credentials):
         creds = test_credentials["employee"]
 
