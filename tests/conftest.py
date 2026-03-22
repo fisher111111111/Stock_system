@@ -1,13 +1,9 @@
 
 # conftest.py
-import os
+
 import pytest
 from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
-import pyodbc
-import sqlalchemy
 
-load_dotenv()
 
 BASE_URL = "http://127.0.0.1:5000"
 
@@ -33,13 +29,20 @@ def page(browser):
     context.close()
 
 
+import pyodbc
+import os
+from _pytest.terminal import TerminalReporter
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # --- Конфигурация подключения ---
 DB_CONFIG = {
-    'DRIVER': os.getenv('DRIVER_NAME'),
-    'SERVER': os.getenv('SERVER_NAME'),
-    'DATABASE': os.getenv('DATABASE_NAME'),
-    'UID' : os.getenv('DB_USER'),
-    'PWD' : os.getenv('DB_PASSWORD'),
+    'DRIVER': '{ODBC Driver 17 for SQL Server}',
+    'SERVER': 'localhost\\SQLEXPRESS',
+    'DATABASE': 'stock_db',
+    'UID' : 'user',
+    'PWD' : 'password1',
     'Timeout': 5,  # Таймаут подключения в секундах
 }
 
