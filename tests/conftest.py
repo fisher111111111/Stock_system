@@ -30,11 +30,6 @@ def page(browser):
 
 
 import pyodbc
-import os
-from _pytest.terminal import TerminalReporter
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # --- Конфигурация подключения ---
 DB_CONFIG = {
