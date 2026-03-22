@@ -1,11 +1,13 @@
 # tests/test_verify_db.py
 import sys, os
+
+import pytest
 from sqlalchemy import text
 
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from stock_system import app, db
+from ..stock_system import app, db
 
 with app.app_context():
     result = db.session.execute(text("SELECT first_name, password FROM users")).fetchall()
