@@ -1,15 +1,17 @@
 # tests/test_conn_db.py
 import sys
 import os
+
+import pytest
 from sqlalchemy import text, inspect
 
 # Добавляем корень проекта в путь
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 
-from stock_system import app, db
+from ..stock_system import app, db
 
-
+@pytest.mark.db
 def test_connection():
     with app.app_context():
         try:
