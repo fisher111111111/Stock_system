@@ -1,4 +1,3 @@
-from . import app, db
 from .modules_db import Users
 from flask import render_template, request, redirect, url_for, flash
 from .forms import LoginForm, CreateUserForm
@@ -31,7 +30,7 @@ def home():
     return render_template('loginUser.html', title = 'Home', form = form)
 
 @app.route('/create', methods=["GET", "POST"])
-@login_required  # To enter for the first time comment this line "@login_required", access the create page and register a new user like:
+@login_required  #To enter for the first time comment this line "@login_required", access the create page and register a new user like:
 def create():  # admin, admin, 123, 123. Then uncomment this and access login page using credentials you just created.
     
     # This function loads the create page and validates the creation of a new user.

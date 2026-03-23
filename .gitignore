@@ -2,3 +2,5 @@ __pycache__/
 *.env
 screenshots/
 .venv/
+*.py[cod]
+*.pyc
