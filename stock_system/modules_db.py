@@ -4,13 +4,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, LargeBinary, Float, CheckConstraint
 
 class Users(db.Model, UserMixin):
-    
+
     # Creating the table Users.
     id: Mapped[int] = mapped_column(primary_key=True)
-    first_name: Mapped[str] = mapped_column(String(15), unique=True, nullable=False)
-    last_name: Mapped[str] = mapped_column(String(15), nullable=False)
-    password: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
-    role: Mapped[str] = mapped_column(String(15), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(50), unique=False, nullable=False)
+    last_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    password: Mapped[str] = mapped_column(String(255), nullable=False)  # ✅ строка для bcrypt
+    role: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Returns info.
     def __repr__(self):
