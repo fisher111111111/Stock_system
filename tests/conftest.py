@@ -1,30 +1,101 @@
-
-# conftest.py
-import os
+# tests/conftest.py
 import pytest
-from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
-import pyodbc
-import sqlalchemy
+import logging
+import os
+from datetime import datetime
+from typing import Generator
 
-load_dotenv()
+from playwright.sync_api import sync_playwright, Page, Browser
+from Stock_Management_System.db.sqlserver_base import SqlServerBase  # ✅ Исправлен импорт (убран лишний пробел)
 
-BASE_URL = "http://127.0.0.1:5000"
+# === Настройки ===
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:5000")
 
+
+# === Настройка логирования (ПРАВИЛЬНЫЙ ХУК) ===
+# ✅ ИСПРАВЛЕНО: pytest_configure вместо pytest_logger
+def pytest_configure(config):
+    """Настройка логирования перед запуском тестов."""
+    logging.basicConfig(
+        level=getattr(logging, os.getenv("LOG_LEVEL", "INFO")),
+        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+        datefmt='%H:%M:%S',
+        force=True  # Перезаписывает существующие хендлеры
+    )
+
+
+# === Проверка подключения к БД перед запуском ===
+def check_db_connection() -> tuple[bool, str | None]:
+    """Проверяет подключение к БД. Возвращает (True, None) или (False, ошибка)."""
+    import pyodbc
+
+    db_config = {
+        'DRIVER': '{ODBC Driver 17 for SQL Server}',
+        'SERVER': os.getenv("MSSQL_HOST", "localhost\\SQLEXPRESS"),
+        'DATABASE': os.getenv("MSSQL_TEST_DB", "stock_db"),
+        'UID': os.getenv("MSSQL_USER", "user"),
+        'PWD': os.getenv("MSSQL_PASSWORD", "password1"),
+        'Timeout': 5,
+    }
+
+    conn_str = (
+        f"DRIVER={db_config['DRIVER']};"
+        f"SERVER={db_config['SERVER']};"
+        f"DATABASE={db_config['DATABASE']};"
+        f"UID={db_config['UID']};"
+        f"PWD={db_config['PWD']};"
+    )
+
+    try:
+        conn = pyodbc.connect(conn_str, timeout=db_config['Timeout'])
+        conn.close()
+        return True, None
+    except Exception as e:
+        return False, str(e)
+
+
+# === Хук: остановка при ошибке подключения к БД ===
+# ✅ ИСПРАВЛЕНО: правильный возврат значения
+def pytest_collection(session) -> None:
+    """Вызывается во время сбора тестов."""
+    is_connected, error = check_db_connection()
+
+    if not is_connected:
+        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
+        if reporter:
+            reporter.write_line("\n❌ ОШИБКА ПОДКЛЮЧЕНИЯ К БАЗЕ ДАННЫХ ❌", bold=True, red=True)
+            reporter.write_line(f"Не удалось подключиться к MS SQL Server: {error}", red=True)
+            reporter.write_line("Запуск тестов остановлен.\n", red=True)
+        # ✅ Правильный способ остановить тесты: выбросить исключение
+        raise pytest.UsageError(f"Database connection failed: {error}")
+
+
+# === Фикстура: имя тестовой БД ===
+# ✅ ДОБАВЛЕНО: отсутствующая фикстура
+# @pytest.fixture(scope="session")
+# def test_db_name() -> str:
+#     """Уникальное имя тестовой БД для изоляции."""
+#     return os.getenv("MSSQL_TEST_DB", "stock_db")
+
+
+# === Фикстуры Playwright ===
 @pytest.fixture(scope="session")
-def browser():
+def browser() -> Generator[Browser, None, None]:
+    """Браузер для всех тестов в сессии."""
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=False,  # True для CI/CD
-            slow_mo=50       # Замедление для отладки
+            headless=os.getenv("CI") == "true",  # Headless в CI
+            slow_mo=50 if os.getenv("DEBUG") else 0  # Замедление при отладке
         )
         yield browser
         browser.close()
 
+
 @pytest.fixture(scope="function")
-def page(browser):
+def page(browser: Browser) -> Generator[Page, None, None]:
+    """Новая страница для каждого теста."""
     context = browser.new_context(
-        viewport=None,
+        viewport={"width": 1920, "height": 1080},
         ignore_https_errors=True,
         base_url=BASE_URL
     )
@@ -33,74 +104,43 @@ def page(browser):
     context.close()
 
 
-# --- Конфигурация подключения ---
-DB_CONFIG = {
-    'DRIVER': os.getenv('DRIVER_NAME'),
-    'SERVER': os.getenv('SERVER_NAME'),
-    'DATABASE': os.getenv('DATABASE_NAME'),
-    'UID' : os.getenv('DB_USER'),
-    'PWD' : os.getenv('DB_PASSWORD'),
-    'Timeout': 5,  # Таймаут подключения в секундах
-}
-
-# ...
-def check_db_connection():
-    """Проверяет подключение к БД. Возвращает (True, None) или (False, ошибка)."""
-    conn_str = (
-        f"DRIVER={DB_CONFIG['DRIVER']};"
-        f"SERVER={DB_CONFIG['SERVER']};"
-        f"DATABASE={DB_CONFIG['DATABASE']};"
-        f"UID={DB_CONFIG['UID']};"
-        f"PWD={DB_CONFIG['PWD']};"
-    )
+# === Фикстуры для БД ===
+@pytest.fixture(scope="function")
+def db_connector(test_db_name: str) -> Generator[SqlServerBase, None, None]:
+    """Подключение к БД для каждого теста."""
+    db = SqlServerBase(logger_name=f"test.{datetime.now().strftime('%H%M%S')}")
     try:
-        conn = pyodbc.connect(conn_str, timeout=DB_CONFIG['Timeout'])
-        conn.close()
-        return True, None
-    except Exception as e:
-        return False, str(e)
+        db.connect(db_name=test_db_name)
+        yield db
+    finally:
+        db.close()
 
 
-# --- Хук: Проверка перед сбором тестов ---
-def pytest_configure(config):
-    """Вызывается Pytest сразу после инициализации, до сбора тестов."""
-    is_connected, error = check_db_connection()
+@pytest.fixture(scope="function")
+def db_transaction(db_connector: SqlServerBase) -> Generator[SqlServerBase, None, None]:
+    """Тест в транзакции с автоматическим откатом."""
+    db_connector.connection.begin()
+    try:
+        yield db_connector
+        db_connector.connection.rollback()
+    except Exception:
+        db_connector.connection.rollback()
+        raise
 
-    if not is_connected:
-        # Сохраняем ошибку в конфиге, чтобы использовать в хуке сбора
-        config._db_connection_error = error
-    else:
-        config._db_connection_error = None
+
+@pytest.fixture(scope="function")
+def clean_products(db_connector: SqlServerBase) -> Generator[None, None, None]:
+    """Очистка таблицы products до/после теста (только тестовые данные)."""
+    # Удаляем только тестовые записи (id > 100)
+    db_connector.execute_query("DELETE FROM [dbo].[products] WHERE [id] > 100")
+    yield
+    db_connector.execute_query("DELETE FROM [dbo].[products] WHERE [id] > 100")
 
 
-# --- Хук: Остановка сбора тестов при ошибке ---
-def pytest_collection(session):
-    """Вызывается во время сбора тестов. Если вернуть не None, сбор прекратится."""
-    if hasattr(session.config, '_db_connection_error') and session.config._db_connection_error:
-        error_msg = session.config._db_connection_error
-        # Выводим красивое сообщение в консоль
-        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        if reporter:
-            reporter.write_line("\n❌ ОШИБКА ПОДКЛЮЧЕНИЯ К БАЗЕ ДАННЫХ ❌", red=True)
-            reporter.write_line(f"Не удалось подключиться к MS SQL Server: {error_msg}", red=True)
-            reporter.write_line("Запуск тестов остановлен.\n", red=True)
-
-        # Возвращаем код ошибки, чтобы pytest понял, что что-то не так
-        return 1
-
-    return None
-
-#     # --- Опционально: Фикстура для дублирования проверки ---
-#
-#
-# @pytest.fixture(scope="session", autouse=True)
-# def require_db_connection():
-#     """
-#     Страховочная фикстура.
-#     Если хук выше по какой-то причине не сработает, эта фикстура упадет первой.
-#     """
-#     is_connected, error = check_db_connection()
-#     if not is_connected:
-#         pytest.fail(f"Нет подключения к БД: {error}", pytrace=False)
-
-# --- Конфигурация подключения ---
+@pytest.fixture(scope="function")
+def clean_users(db_connector: SqlServerBase) -> Generator[None, None, None]:
+    """Очистка таблицы users до/после теста (сохраняем системных пользователей)."""
+    # Сохраняем пользователей с id <= 5 (admin, alex, etc.)
+    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 5")
+    yield
+    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 5")

@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine, Connection
+from sqlalchemy.types import LargeBinary
 
 from Stock_Management_System.db.db_base import DbBase, DatabaseException
 
@@ -32,8 +32,8 @@ class SqlServerBase(DbBase):
         # Чтение настроек из env или использование дефолтов
         host = host or os.getenv("MSSQL_HOST", "localhost")
         port = port or int(os.getenv("MSSQL_PORT", "1433"))
-        user = user or os.getenv("MSSQL_USER", "sa")
-        password = password or os.getenv("MSSQL_PASSWORD", "")
+        user = user or os.getenv("MSSQL_USER", "user")
+        password = password or os.getenv("MSSQL_PASSWORD", "password1")
         driver = driver or os.getenv("MSSQL_DRIVER", "ODBC Driver 17 for SQL Server")
 
         self.logger.info(
@@ -138,7 +138,7 @@ class SqlServerBase(DbBase):
             conditions = []
             for idx, (key, value) in enumerate(where.items()):
                 if isinstance(value, (list, tuple)):
-                    placeholders = [f"@p{i}_{key}" for i in range(len(value))]
+                    placeholders = [f":p{i}_{key}" for i in range(len(value))]
                     conditions.append(f"{key} IN ({', '.join(placeholders)})")
                     for i, v in enumerate(value):
                         params[f"p{i}_{key}"] = v
@@ -146,7 +146,7 @@ class SqlServerBase(DbBase):
                     conditions.append(f"{key} IS NULL")
                 else:
                     param_name = f"p_{key}"
-                    conditions.append(f"{key} = @{param_name}")
+                    conditions.append(f"{key} = :{param_name}")
                     params[param_name] = value
             query_parts.append(f"WHERE {' AND '.join(conditions)}")
 
@@ -174,14 +174,21 @@ class SqlServerBase(DbBase):
         )
         return result[0]["cnt"] if result else 0
 
+
     def _insert(self, table: str, data: dict, schema: str = "dbo") -> int:
-        """Insert single record, return affected rows count."""
+        """Insert single record with automatic password conversion."""
         self._check_connection()
         if not data:
             raise ValueError("Cannot insert empty data")
 
+        # ✅ Авто-конвертация password для VARBINARY колонки
+        if table == "users" and "password" in data:
+            if isinstance(data["password"], str):
+                # ✅ Оборачиваем в Binary() для корректной передачи в VARBINARY
+                data["password"] = LargeBinary(data["password"].encode('utf-8'))
+
         columns = ", ".join(f"[{k}]" for k in data.keys())
-        placeholders = ", ".join(f"@{k}" for k in data.keys())
+        placeholders = ", ".join(f":{k}" for k in data.keys())
         query = f"INSERT INTO [{schema}].[{table}] ({columns}) VALUES ({placeholders})"
         return self.execute_query(query, data)
 
@@ -199,13 +206,13 @@ class SqlServerBase(DbBase):
         if not where:
             raise ValueError("UPDATE requires WHERE clause for safety")
 
-        set_clause = ", ".join(f"[{k}] = @{k}" for k in data.keys())
+        set_clause = ", ".join(f"[{k}] = :{k}" for k in data.keys())
         conditions = []
         params = dict(data)
 
         for key, value in where.items():
             param_name = f"w_{key}"
-            conditions.append(f"[{key}] = @{param_name}")
+            conditions.append(f"[{key}] = :{param_name}")
             params[param_name] = value
 
         query = f"UPDATE [{schema}].[{table}] SET {set_clause} WHERE {' AND '.join(conditions)}"
@@ -226,7 +233,7 @@ class SqlServerBase(DbBase):
         params = {}
         for key, value in where.items():
             param_name = f"w_{key}"
-            conditions.append(f"[{key}] = @{param_name}")
+            conditions.append(f"[{key}] = :{param_name}")
             params[param_name] = value
 
         query = f"DELETE FROM [{schema}].[{table}] WHERE {' AND '.join(conditions)}"

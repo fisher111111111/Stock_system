@@ -14,7 +14,7 @@ class Users(db.Model, UserMixin):
 
     # Returns info.
     def __repr__(self):
-        return f"User {self.first_name}"
+        return f"User {self.first_name, self.last_name}"
     
 class Products(db.Model):
     
