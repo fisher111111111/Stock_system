@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import pyodbc
 import sqlalchemy
 
-load_dotenv()
+load_dotenv(encoding='utf-8')
 
 BASE_URL = "http://127.0.0.1:5000"
 

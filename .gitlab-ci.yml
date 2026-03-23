@@ -17,12 +17,19 @@ run_tests:
     paths:
       - .venv/pip-cache/
 
+#  before_script:
+#    - echo "DRIVER_NAME=ODBC Driver 17 for SQL Server" > .env
+#    - echo "SERVER_NAME=$SERVER_NAME" >> .env
+#    - echo "DATABASE_NAME=$DATABASE_NAME" >> .env
+#    - echo "DB_USER=$DB_USER" >> .env
+#    - echo "DB_PASSWORD=$DB_PASSWORD" >> .env
   before_script:
-    - echo "DRIVER_NAME=ODBC Driver 17 for SQL Server" > .env
-    - echo "SERVER_NAME=$SERVER_NAME" >> .env
-    - echo "DATABASE_NAME=$DATABASE_NAME" >> .env
-    - echo "DB_USER=$DB_USER" >> .env
-    - echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+    # Используем PowerShell для создания файла в кодировке UTF-8 без BOM
+    - powershell -Command "Set-Content -Path .env -Value 'DRIVER_NAME=ODBC Driver 17 for SQL Server' -Encoding UTF8"
+    - powershell -Command "Add-Content -Path .env -Value 'SERVER_NAME=$env:SERVER_NAME' -Encoding UTF8"
+    - powershell -Command "Add-Content -Path .env -Value 'DATABASE_NAME=$env:DATABASE_NAME' -Encoding UTF8"
+    - powershell -Command "Add-Content -Path .env -Value 'DB_USER=$env:DB_USER' -Encoding UTF8"
+    - powershell -Command "Add-Content -Path .env -Value 'DB_PASSWORD=$env:DB_PASSWORD' -Encoding UTF8"
 
   script:
     - echo "--- Подготовка окружения ---"
