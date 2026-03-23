@@ -1,12 +1,12 @@
 # db/db_base.py
 import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 from typing import List, Optional, Any, Dict
 from uuid import UUID
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, text, Engine
+from sqlalchemy import text, Engine
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -18,7 +18,7 @@ class DatabaseException(Exception):
 
 
 class DbBase(ABC):
-    """Base synchronous DB connector using SQLAlchemy."""
+    """Базовый синхронный коннектор БД использующий SQLAlchemy."""
 
     def __init__(self, logger_name: Optional[str] = None):
         self.engine: Optional[Engine] = None
@@ -38,7 +38,7 @@ class DbBase(ABC):
             self.logger.setLevel(logging.INFO)
 
     def close(self):
-        """Close connection and dispose engine."""
+        """Закрыть соединение и остановить движок"""
         if self.connection:
             self.logger.info("Closing database connection")
             self.connection.close()
@@ -73,7 +73,7 @@ class DbBase(ABC):
             query: str,
             params: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
-        """Execute SELECT query and return list of dicts."""
+        """ Выполнение запроса SELECT и возврат списка со словарями"""
         if not self.connection:
             raise DatabaseException("No active database connection")
 
@@ -91,7 +91,7 @@ class DbBase(ABC):
             query: str,
             params: Optional[Dict[str, Any]] = None
     ) -> int:
-        """Execute INSERT/UPDATE/DELETE query, return affected rows count."""
+        """ Выполнение запросов INSERT/UPDATE/DELETE, возвращает количество затронутых строк."""
         if not self.connection:
             raise DatabaseException("No active database connection")
 
@@ -109,7 +109,7 @@ class DbBase(ABC):
 
     @staticmethod
     def check_uuids_list(list_ids: List[str]) -> None:
-        """Validate that all items in list are valid UUID strings."""
+        """Проверка, что все элементы в списке являются допустимыми строками UUID."""
         if not isinstance(list_ids, list):
             raise ValueError(f"Expected list of strings, got {type(list_ids).__name__}")
         for item in list_ids:

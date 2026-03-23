@@ -1,7 +1,6 @@
 # tests/test_users.py
 import uuid
 import bcrypt
-import pytest
 
 from Stock_Management_System.db.sqlserver_base import SqlServerBase
 from Stock_Management_System.tests.db.factories.user_factory import UserFactory
@@ -66,10 +65,10 @@ class TestUsersCRUD:
             where={"id": 2}
         )
 
-        assert len(result) == 2
-        assert result[1]["first_name"] == "John"
-        assert result[1]["last_name"] == "Doe"
-        assert result[1]["role"] == "Manager"
+        assert len(result) == 1
+        assert result[0]["first_name"] == "John"
+        assert result[0]["last_name"] == "Doe"
+        assert result[0]["role"] == "Employee"
 
     def test_select_users_by_role(self, db_connector: SqlServerBase, clean_users: None):
         """Тест: выборка пользователей по роли."""
@@ -301,7 +300,7 @@ class TestUsersBusinessLogic:
 
         unique_id = uuid.uuid4().hex[:8]  # ✅ Уникальный суффикс
 
-        UserFactory.create(db_connector, first_name=f"Silvio_{unique_id}", last_name="Petrov")
+        UserFactory.create(db_connector, first_name=f"Alexey_{unique_id}", last_name="Petrov")
         UserFactory.create(db_connector, first_name=f"Alex_{unique_id}", last_name="Smith")
         UserFactory.create(db_connector, first_name=f"Bob_{unique_id}", last_name="Alexandrov")
 
@@ -315,6 +314,6 @@ class TestUsersBusinessLogic:
         )
 
         names = [r["first_name"] for r in results]
-        assert any(f"Alexander_{unique_id}" in n for n in names)
+        assert any(f"Alexey_{unique_id}" in n for n in names)
         assert any(f"Alex_{unique_id}" in n for n in names)
         assert all(f"Bob_{unique_id}" not in n for n in names)

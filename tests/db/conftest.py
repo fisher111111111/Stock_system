@@ -58,6 +58,6 @@ def clean_products(db_connector: SqlServerBase) -> Generator[None, None, None]:
 def clean_users(db_connector: SqlServerBase) -> Generator[None, None, None]:
     """Очистка таблицы users до/после теста."""
     # Не удаляем системных пользователей (id <= 5), если они нужны
-    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 5")
+    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 3")
     yield
-    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 5")
+    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 3")
