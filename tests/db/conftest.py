@@ -1,50 +1,21 @@
 # tests/db/conftest.py
-# import os
-# import sys
-#
-# import pytest
-# import logging
-# from datetime import datetime
-# from typing import Generator
-# import bcrypt
-#
-# # from Stock_Management_System.db.sqlserver_base import SqlServerBase
-# # Добавляем корень проекта в sys.path
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-#
-# # Теперь можно импортировать из пакета db
-# # from Stock_Management_System.db.sqlserver_base import SqlServerBase
-# from db.sqlserver_base import SqlServerBase
-
 import os
 import sys
+
 import pytest
 import logging
 from datetime import datetime
 from typing import Generator
 import bcrypt
 
-# Добавляем корень проекта в sys.path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-print(f"DEBUG: project_root = {project_root}")
-print(f"DEBUG: sys.path before = {sys.path}")
-sys.path.insert(0, project_root)
-print(f"DEBUG: sys.path after = {sys.path}")
+# # from Stock_Management_System.db.sqlserver_base import SqlServerBase
+# # Добавляем корень проекта в sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+#
+# # Теперь можно импортировать из пакета db
+from ... db.sqlserver_base import SqlServerBase
+# from Stock_Management_System.db.sqlserver_base import SqlServerBase
 
-# Проверяем содержимое папки db
-db_path = os.path.join(project_root, 'db')
-if os.path.exists(db_path):
-    print(f"DEBUG: Contents of {db_path}: {os.listdir(db_path)}")
-else:
-    print(f"DEBUG: {db_path} does not exist!")
-
-# Импортируем
-try:
-    from db.sqlserver_base import SqlServerBase
-    print("DEBUG: Import successful")
-except ImportError as e:
-    print(f"DEBUG: Import error: {e}")
-    raise
 
 def pytest_configure(config):
     """Настройка логирования для тестов."""
