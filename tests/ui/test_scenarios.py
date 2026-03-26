@@ -406,35 +406,3 @@ def debug_snapshot(page: Page, label: str):
     path = f"{SCREENSHOTS_DIR}/{label}_{int(time.time() * 1000)}.png"
     page.screenshot(path=path)
     print(f"[DEBUG {label}] URL: {page.url}, Flash: '{get_flash(page)}', Screenshot: {path}")
-
-
-# conftest.py (обновлённый)
-"""
-# tests/conftest.py
-import pytest
-from playwright.sync_api import sync_playwright
-
-def pytest_addoption(parser):
-    parser.addoption("--headless", action="store_true", default=False)
-    parser.addoption("--slowmo", type=int, default=0)
-
-@pytest.fixture(scope="session")
-def browser(pytestconfig):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=pytestconfig.getoption("--headless"),
-            slow_mo=pytestconfig.getoption("--slowmo")
-        )
-        yield browser
-        browser.close()
-
-@pytest.fixture(scope="function")
-def page(browser):
-    context = browser.new_context(
-        viewport={"width": 1920, "height": 1080},
-        ignore_https_errors=True,
-    )
-    page = context.new_page()
-    yield page
-    context.close()
-"""

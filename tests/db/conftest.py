@@ -4,6 +4,7 @@ import pytest
 import logging
 from datetime import datetime
 from typing import Generator
+import bcrypt
 
 from Stock_Management_System.db.sqlserver_base import SqlServerBase
 
@@ -45,7 +46,6 @@ def db_transaction(db_connector: SqlServerBase) -> Generator[SqlServerBase, None
         db_connector.connection.rollback()
         raise
 
-
 @pytest.fixture(scope="function")
 def clean_products(db_connector: SqlServerBase) -> Generator[None, None, None]:
     """Очистка таблицы products до/после теста."""
@@ -53,11 +53,23 @@ def clean_products(db_connector: SqlServerBase) -> Generator[None, None, None]:
     yield
     db_connector.execute_query("DELETE FROM [dbo].[products]")
 
-
 @pytest.fixture(scope="function")
 def clean_users(db_connector: SqlServerBase) -> Generator[None, None, None]:
-    """Очистка таблицы users до/после теста."""
-    # Не удаляем системных пользователей (id <= 5), если они нужны
-    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 3")
+    """Очистка таблицы users до/после теста. Сохраняются первые 3 пользователя."""
+    db_connector.execute_query("""
+        DELETE FROM [dbo].[users] 
+        WHERE [id] NOT IN (
+            SELECT TOP 3 [id] 
+            FROM [dbo].[users] 
+            ORDER BY [id] ASC
+        )
+    """)
     yield
-    db_connector.execute_query("DELETE FROM [dbo].[users] WHERE [id] > 3")
+    db_connector.execute_query("""
+        DELETE FROM [dbo].[users] 
+        WHERE [id] NOT IN (
+            SELECT TOP 3 [id] 
+            FROM [dbo].[users] 
+            ORDER BY [id] ASC
+        )
+    """)
