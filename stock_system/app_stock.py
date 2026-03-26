@@ -79,6 +79,6 @@ with app.app_context():
         # This function checks if the information passed by the user matches with the db.
         user_info = cursor.execute("Select * From Users Where first_name = ?", (first_name,)).fetchone()
         if user_info:
-            check_password = bcrypt.checkpw(password.encode('utf-8'), user_info[3])  # Checks if passwords match.
+            check_password = bcrypt.checkpw(password.encode('utf-8'), user_info[3].encode('utf-8'))  # Checks if passwords match.
             return True if first_name == user_info[1] and check_password and role == user_info[4] else False
         return False
