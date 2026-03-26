@@ -3,8 +3,8 @@ import uuid
 import bcrypt
 import pytest
 
-from Stock_Management_System.db.sqlserver_base import SqlServerBase
-from Stock_Management_System.tests.db.factories.user_factory import UserFactory
+from ...db.sqlserver_base import SqlServerBase
+from ...tests.db.factories.user_factory import UserFactory
 
 
 # ✅ Вспомогательные функции для работы с password (VARBINARY ↔ str)

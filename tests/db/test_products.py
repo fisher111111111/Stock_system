@@ -1,7 +1,7 @@
 # tests/test_products.py
 from decimal import Decimal
-from Stock_Management_System.db.sqlserver_base import SqlServerBase
-from Stock_Management_System.tests.db.factories.product_factory import ProductFactory
+from ... db.sqlserver_base import SqlServerBase
+from ...tests.db.factories.product_factory import ProductFactory
 
 
 class TestProductsCRUD:
