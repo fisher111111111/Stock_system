@@ -13,7 +13,7 @@ import bcrypt
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 # Теперь можно импортировать из пакета db
-from db.sqlserver_base import SqlServerBase
+from Stock_Management_System.db.sqlserver_base import SqlServerBase
 
 def pytest_configure(config):
     """Настройка логирования для тестов."""
