@@ -1,4 +1,4 @@
-# tests/conftest.py
+# tests/db/conftest.py
 import os
 import pytest
 import logging

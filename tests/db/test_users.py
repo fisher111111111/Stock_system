@@ -1,6 +1,7 @@
 # tests/test_users.py
 import uuid
 import bcrypt
+import pytest
 
 from Stock_Management_System.db.sqlserver_base import SqlServerBase
 from Stock_Management_System.tests.db.factories.user_factory import UserFactory
@@ -56,15 +57,45 @@ class TestUsersCRUD:
 
         assert user["role"] == "Manager"
 
+    # def test_select_user_by_id(self, db_connector: SqlServerBase):
+    #     """Тест: получение пользователя по ID (с существующими данными)."""
+    #
+    #     result = db_connector._select(
+    #         fields=["id", "first_name", "last_name", "role"],
+    #         from_table="users",
+    #         where={"id": 2}
+    #     )
+    #
+    #     assert len(result) == 1
+    #     assert result[0]["first_name"] == "John"
+    #     assert result[0]["last_name"] == "Doe"
+    #     assert result[0]["role"] == "Employee"
+
     def test_select_user_by_id(self, db_connector: SqlServerBase):
         """Тест: получение пользователя по ID (с существующими данными)."""
 
+        # 1. Находим пользователя John Doe в БД
+        user_data = db_connector._select(
+            fields=["id", "first_name", "last_name", "role"],
+            from_table="users",
+            where={"first_name": "John", "last_name": "Doe"}
+        )
+
+        # 2. Если такого пользователя нет, тест пропускается (или можно создать)
+        if not user_data:
+            pytest.fail("Тестовый пользователь John Doe не найден в базе данных")
+
+        # 3. Берём его реальный id
+        user_id = user_data[0]["id"]
+
+        # 4. Получаем того же пользователя по id
         result = db_connector._select(
             fields=["id", "first_name", "last_name", "role"],
             from_table="users",
-            where={"id": 2}
+            where={"id": user_id}
         )
 
+        # 5. Проверяем, что вернулась ровно одна запись
         assert len(result) == 1
         assert result[0]["first_name"] == "John"
         assert result[0]["last_name"] == "Doe"

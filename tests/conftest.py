@@ -1,11 +1,11 @@
-
-# conftest.py
+# test/conftest.py
 import os
 import pytest
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import pyodbc
 import sqlalchemy
+import bcrypt
 
 load_dotenv(encoding='utf-8')
 
@@ -35,13 +35,19 @@ def page(browser):
 
 # --- Конфигурация подключения ---
 DB_CONFIG = {
-    'DRIVER': os.getenv('DRIVER_NAME'),
-    'SERVER': os.getenv('SERVER_NAME'),
-    'DATABASE': os.getenv('DATABASE_NAME'),
-    'UID' : os.getenv('DB_USER'),
-    'PWD' : os.getenv('DB_PASSWORD'),
+    'DRIVER': 'ODBC Driver 17 for SQL Server',
+    'SERVER': 'localhost\\SQLEXPRESS', # или 'WIN-VIK827QHRC6\\SQLEXPRESS'
+    'DATABASE': 'stock_db',
+    'UID' : 'user',
+    'PWD' : 'password1',
     'Timeout': 5,  # Таймаут подключения в секундах
 }
+#
+# DRIVER_NAME = 'ODBC Driver 17 for SQL Server'
+# SERVER_NAME = 'localhost\\SQLEXPRESS'   # или 'WIN-VIK827QHRC6\\SQLEXPRESS'
+# DATABASE_NAME = 'stock_db'
+# DB_USER = 'user'
+# DB_PASSWORD = 'password1'
 
 # ...
 def check_db_connection():
@@ -89,6 +95,38 @@ def pytest_collection(session):
         return 1
 
     return None
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_users():
+    conn_str = f"DRIVER={DB_CONFIG['DRIVER']};SERVER={DB_CONFIG['SERVER']};DATABASE={DB_CONFIG['DATABASE']};UID={DB_CONFIG['UID']};PWD={DB_CONFIG['PWD']};"
+    conn = pyodbc.connect(conn_str)
+    cursor = conn.cursor()
+
+    def hash_password(password):
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+    # Admin: логин "admin", пароль "admin", роль Manager
+    admin_hashed = hash_password("admin")
+    cursor.execute("""
+        IF EXISTS (SELECT 1 FROM users WHERE first_name = 'admin')
+            UPDATE users SET last_name = 'admin', password = ?, role = 'Manager' WHERE first_name = 'admin'
+        ELSE
+            INSERT INTO users (first_name, last_name, password, role) VALUES ('admin', 'admin', ?, 'Manager')
+    """, (admin_hashed, admin_hashed))
+
+    # Employee: логин "Worker", пароль "work", роль Employee
+    worker_hashed = hash_password("work")
+    cursor.execute("""
+        IF EXISTS (SELECT 1 FROM users WHERE first_name = 'Worker')
+            UPDATE users SET last_name = '', password = ?, role = 'Employee' WHERE first_name = 'Worker'
+        ELSE
+            INSERT INTO users (first_name, last_name, password, role) VALUES ('Worker', '', ?, 'Employee')
+    """, (worker_hashed, worker_hashed))
+
+    conn.commit()
+    conn.close()
+
 
 #     # --- Опционально: Фикстура для дублирования проверки ---
 #
