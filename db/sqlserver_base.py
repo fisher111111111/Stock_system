@@ -6,7 +6,7 @@ from urllib.parse import quote_plus
 from sqlalchemy import create_engine, text
 from sqlalchemy.types import LargeBinary
 
-from Stock_Management_System.db.db_base import DbBase, DatabaseException
+from ..db.db_base import DbBase, DatabaseException
 
 
 class SqlServerBase(DbBase):
