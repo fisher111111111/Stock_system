@@ -3,7 +3,7 @@ import uuid
 from decimal import Decimal
 from typing import Optional
 
-from Stock_Management_System.db.sqlserver_base import SqlServerBase
+from .... db.sqlserver_base import SqlServerBase
 
 
 class ProductFactory:

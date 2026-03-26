@@ -3,7 +3,7 @@ import uuid
 import bcrypt
 from typing import Optional, Union
 
-from Stock_Management_System.db.sqlserver_base import SqlServerBase
+from .... db.sqlserver_base import SqlServerBase
 
 
 class UserFactory:
